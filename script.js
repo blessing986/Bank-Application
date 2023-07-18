@@ -115,12 +115,12 @@ const formatMovementDate = function (date, locale) {
   }
 };
 
-const formatCur = function(value, locale, currency){
+const formatCur = function (value, locale, currency) {
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: currency,
   }).format(value);
-}
+};
 
 const displayMovements = function (acc, sort = false) {
   containerMovements.innerHTML = '';
@@ -164,12 +164,12 @@ const calcDisplaySummary = acc => {
   const incomes = acc.movements
     .filter(mov => mov > 0)
     .reduce((acc, mov) => acc + mov, 0);
-    labelSumIn.textContent = formatCur(incomes, acc.locale, acc.currency);
+  labelSumIn.textContent = formatCur(incomes, acc.locale, acc.currency);
 
   const out = acc.movements
     .filter(mov => mov < 0)
     .reduce((acc, mov) => acc + mov, 0);
-    labelSumOut.textContent = formatCur(Math.abs(out), acc.locale, acc.currency);
+  labelSumOut.textContent = formatCur(Math.abs(out), acc.locale, acc.currency);
 
   const interest = acc.movements
     .filter(mov => mov > 0)
@@ -179,7 +179,7 @@ const calcDisplaySummary = acc => {
       return mov >= 1;
     })
     .reduce((acc, int) => acc + int, 0);
-    labelSumInterest.textContent = formatCur(interest, acc.locale, acc.currency);
+  labelSumInterest.textContent = formatCur(interest, acc.locale, acc.currency);
 };
 //calcDisplaySummary(account1.movements);
 
@@ -206,8 +206,35 @@ const updateUI = function (acc) {
   calcDisplaySummary(acc);
 };
 
-//Event  handler
-let currentAccount;
+const startLogoutTimer = function () {
+  const tick = function () {
+    const min = String(Math.trunc(time / 60)).padStart(2, 0);
+    const sec = String(time % 60).padStart(2, 0);
+
+    // In each call, print the remaining time to UI
+    labelTimer.textContent = `${min}:${sec}`;
+
+    // When at 0 seconds, stop timer and log out user
+    if (time === 0) {
+      clearInterval(timer);
+      labelWelcome.textContent = 'Log in to get started';
+      containerApp.style.opacity = 0;
+    }
+
+    // Decrease by 1 seconds
+    time--;
+  };
+  // Set time to 5 minutes
+  let time = 120;
+
+  // Call the timer every second
+  tick();
+  const timer = setInterval(tick, 1000);
+  return timer;
+};
+
+//Event  handlers
+let currentAccount, timer;
 
 // FAKE ALWAYS LOGGED IN
 // currentAccount = account1;
@@ -245,7 +272,10 @@ btnLogin.addEventListener('click', function (e) {
   // const locale = navigator.language;
   // console.log(locale);
 
-  labelDate.textContent = new Intl.DateTimeFormat(currentAccount.locale, options).format(now);
+  labelDate.textContent = new Intl.DateTimeFormat(
+    currentAccount.locale,
+    options
+  ).format(now);
   // const day = `${now.getDate()}`.padStart(2, 0);
   // const month = `${now.getMonth() + 1}`.padStart(2, 0);
   // const year = now.getFullYear();
@@ -256,6 +286,10 @@ btnLogin.addEventListener('click', function (e) {
   // clear input fields
   inputLoginUsername.value = inputLoginPin.value = '';
   inputLoginPin.blur();
+
+  // Timer
+  if (timer) clearInterval(timer);
+  timer = startLogoutTimer();
 
   // Update UI
   updateUI(currentAccount);
@@ -290,6 +324,10 @@ btnTransfer.addEventListener('click', function (e) {
 
     // Update UI
     updateUI(currentAccount);
+
+    // Rest Timer
+    clearInterval(timer);
+    timer = startLogoutTimer();
   }
 });
 
@@ -308,6 +346,10 @@ btnLoan.addEventListener('click', function (e) {
 
       // Update UI
       updateUI(currentAccount);
+
+      // Rest Timer
+      clearInterval(timer);
+      timer = startLogoutTimer();
     }, 2500);
   }
   inputLoanAmount.value = '';
